@@ -168,7 +168,7 @@ b-b""";
 
             checkBinary(ast,Kind.MINUS);
             Expr v0 = ((BinaryExpr)ast).getLeft();
-            checkIdent(v0,"b");Expr v1 = ((BinaryExpr)ast).getRight();
+           checkIdent(v0,"b");Expr v1 = ((BinaryExpr)ast).getRight();
             checkIdent(v1,"b");});
     }
 
