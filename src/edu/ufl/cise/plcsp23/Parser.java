@@ -199,24 +199,22 @@ public class Parser implements IParser {
                     continue;
                 }
                 else
-                    declarationList = decList();
+                    declarationList.add(declar());
             }
 
 
             firstToken = nextToken;
             nextToken = consume();
-            stmList = statementList();
+            if(declarationList.size() == 0)
+            {
+                stmList = statementList();
+            }
+
         }
         progBlock = new Block(currentToken,declarationList,stmList);
         return progBlock;
     }
 
-     public List<Declaration> decList() throws PLCException {
-         List<Declaration> declarationList = new ArrayList<>();
-      declarationList = new ArrayList<>();
-        declarationList.add(declar());
-        return declarationList;
-    }
     public List<Statement> statementList() throws PLCException
     {
         List<Statement> stmList = new ArrayList<>();
