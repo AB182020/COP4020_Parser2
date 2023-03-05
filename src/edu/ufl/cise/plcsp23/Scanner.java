@@ -34,10 +34,11 @@ public class Scanner implements IScanner
         maps.put("image","image".toCharArray());
         maps.put("pixel","pixel".toCharArray());
         maps.put("int","int".toCharArray());
-        maps.put("string ","string ".toCharArray());
+        maps.put("string","string".toCharArray());
         maps.put("nil"," nil".toCharArray());
         maps.put("load","load".toCharArray());
-        maps.put("display","display ".toCharArray());
+        maps.put("void","void".toCharArray());
+        maps.put("display","display".toCharArray());
         maps.put("x","x".toCharArray());
         maps.put("y","y".toCharArray());
         maps.put("a","a".toCharArray());
@@ -55,6 +56,7 @@ public class Scanner implements IScanner
         maps.put("atan","atan".toCharArray());
         maps.put("if","if".toCharArray());
         maps.put("while","while".toCharArray());
+        maps.put("write","write".toCharArray());
     }
     public void CreateMapsOp(HashMap<String,char[]> ops)
     {
@@ -198,7 +200,7 @@ public class Scanner implements IScanner
                         currentToken = currentToken+this.ch;
 
 
-                    while(this.ch != '"' && this.ch !='\n' &&  this.ch !='\r'&& this.ch !='\f')
+                    while(this.ch != '"' && this.ch !='\n' &&  this.ch !='\r'&& this.ch !='\f' &&this.ch!='\0')
                     {
 
                         //currentPos =pos;
@@ -463,17 +465,12 @@ public class Scanner implements IScanner
                     esc = true;
                     if(this.ch =='\n')
                     {
-//                        if(inputChars[pos+1] != 't' && inputChars[pos+1] !='r'&& inputChars[pos+1] !='f'&& inputChars[pos+1] !='n'&& inputChars[pos+1] !='\\' && inputChars[pos+1] !='\"' && inputChars[pos+1] !=' '&& inputChars[pos+1] !='"'&& inputChars[pos+1] != '\0')
-//                            throw new LexicalException("LF by itself not allowed");
-//                        else
-//                        {
-//                            line++;
-//                            startCol =1;
-//                        }
+
                         line++;
                         startCol =1;
 
                     }
+
                     else
                     {
                         startCol++;
@@ -538,6 +535,10 @@ public class Scanner implements IScanner
         {
             case "==":
                 return IToken.Kind.EQ;
+            case ",":
+                return IToken.Kind.COMMA;
+            case ".":
+                return IToken.Kind.DOT;
             case "=":
                 return IToken.Kind.ASSIGN;
             case "?":
@@ -664,6 +665,10 @@ public class Scanner implements IScanner
                 return IToken.Kind.RES_while;
             case "rand":
                 return IToken.Kind.RES_rand;
+            case "pixel":
+                return IToken.Kind.RES_pixel;
+            case "string":
+                return IToken.Kind.RES_string;
             default:
                 return null;
 

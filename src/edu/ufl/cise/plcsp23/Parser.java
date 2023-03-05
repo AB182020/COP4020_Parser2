@@ -2,10 +2,11 @@ package edu.ufl.cise.plcsp23;
 
 import edu.ufl.cise.plcsp23.ast.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
-public class Parser implements IParser
-{
+public class Parser implements IParser {
 
     AST astObj;
     String lexInput;
@@ -18,33 +19,243 @@ public class Parser implements IParser
     boolean condFlag = false;
     boolean parenFlag = false;
     Expr rightE;
+    Expr unaryExprLeft = null;
 
     ConditionalExpr conditionalE;
     Expr leftE;
 
-    Expr leftBinaryExp= null;
+    Expr leftBinaryExp = null;
     String lexTemp;
     Expr e = null;
     RandomExpr rnd;
     IdentExpr idnt;
+    Statement st = null;
+    Ident prgIdent;
     ZExpr z;
     NumLitExpr numLit;
     StringLitExpr stringLit;
     UnaryExpr unary;
     BinaryExpr binary;
+    Program prog = null;
+    Block progBlock;
+    List<NameDef> argList;
 
+
+    NameDef nameDf;
     Expr gaurdE;
+    Declaration decl;
+    Type typeVal;
     Expr trueCase;
     Expr falseCase;
     IScanner scanner;
-    int currentPos =0;
+    int currentPos = 0;
     IToken firstToken;
 
 
-    public Parser(String inputParser)
-    {
+    public Parser(String inputParser) {
         this.inputParser = inputParser;
-        inputParserChars = Arrays.copyOf(inputParser.toCharArray(),inputParser.length()+1);
+        inputParserChars = Arrays.copyOf(inputParser.toCharArray(), inputParser.length() + 1);
+    }
+
+    public Program program() throws PLCException {
+        IToken lParenToken, rParenToken, lCurly, rCurly;
+        kind = firstToken.getKind();
+        if (kind == IToken.Kind.RES_pixel || kind == IToken.Kind.RES_string || kind == IToken.Kind.RES_int || kind == IToken.Kind.RES_void)
+        {
+            //check for program name
+            typeVal = Type.getType(firstToken);
+            nextToken = consume();
+            if (nextToken.getKind() == IToken.Kind.IDENT)
+                prgIdent = new Ident(nextToken);
+            else
+                throw new SyntaxException("Invalid Syntax missing ident in definition");
+            //check for argList
+            firstToken = nextToken;
+            nextToken = consume();
+            if (nextToken.getKind() == IToken.Kind.LPAREN) {
+                lParenToken = nextToken;
+                argList = ParamList();
+                firstToken = nextToken;
+                if (nextToken.getKind() == IToken.Kind.RPAREN)
+                {
+                    rParenToken = nextToken;
+                    firstToken = nextToken;
+                    nextToken = consume();
+                    if (nextToken.getKind() == IToken.Kind.LCURLY)
+                    {
+                        progBlock =  block();
+                        if (nextToken.getKind() == IToken.Kind.RCURLY)
+                        {
+
+                            prog = new Program(firstToken,typeVal,prgIdent,argList,progBlock);
+                        }
+
+                    }
+
+                }
+            } else
+                throw new SyntaxException("Invalid Syntax missing openParam in definition");
+
+
+        }
+        else
+        {
+            throw new SyntaxException("Invalid Syntax");
+        }
+
+        return prog;
+    }
+
+      public List<NameDef> ParamList() throws PLCException {
+      List<NameDef> params = new ArrayList<>();
+      NameDef param = null;
+      firstToken = nextToken;
+        nextToken = consume();
+       while(nextToken.getKind() != IToken.Kind.RPAREN)
+       {
+
+           if(nextToken.getKind() != IToken.Kind.COMMA)
+           {
+               param = nameDef();
+               params.add(param);
+               firstToken = nextToken;
+               nextToken = consume();
+           }
+           else
+           {
+               firstToken = nextToken;
+                nextToken = consume();
+
+           }
+
+
+       }
+       return params;
+    }
+   public NameDef nameDef() throws PLCException {
+        Dimension dim = null;
+
+        if(nextToken.getKind() != IToken.Kind.RES_void && nextToken.getKind() != IToken.Kind.RES_image && nextToken.getKind() != IToken.Kind.RES_int && nextToken.getKind() != IToken.Kind.RES_pixel && nextToken.getKind() != IToken.Kind.RES_string )
+        {
+            throw  new SyntaxException("Invalid Syntax wrong type");
+        }
+        Type typeval = Type.getType(nextToken);
+        firstToken = nextToken;
+        nextToken = consume();
+
+        if(nextToken.getKind() != IToken.Kind.IDENT)
+        {
+             dim = dimension();
+             firstToken = nextToken;
+            nextToken = consume();
+        }
+        Ident identifier = new Ident(nextToken);
+        NameDef param = new NameDef(nextToken,typeval,dim, identifier);
+        return param;
+    }
+
+    public Dimension dimension() throws PLCException {
+        Dimension dim = null;
+        IToken currentToken;
+        firstToken = nextToken;
+       nextToken = consume();
+       Expr eLeft = null;
+       Expr eRight=null;
+       if(nextToken.getKind() == IToken.Kind.LSQUARE) {
+           currentToken = nextToken;
+           firstToken = nextToken;
+           nextToken = consume();
+           while (nextToken.getKind() != IToken.Kind.RSQUARE)
+           {
+               eLeft = expr();
+               firstToken = nextToken;
+               nextToken = consume();
+               if(nextToken.getKind() != IToken.Kind.COMMA)
+                   throw new SyntaxException("Invalid Delimeter in dimension");
+               firstToken = nextToken;
+               nextToken = consume();
+               eRight = expr();
+           }
+           dim =new Dimension(currentToken,eLeft,eRight);
+       }
+        return dim;
+    }
+//block statement
+     public Block block() throws PLCException {
+        IToken currentToken = nextToken;
+        firstToken = nextToken;
+        nextToken = consume();
+         List<Declaration> declarationList = new ArrayList<>();
+         List<Statement> stmList = new ArrayList<>();
+
+        while(nextToken.getKind() != IToken.Kind.RCURLY)
+        {
+            if(nextToken.getKind() != IToken.Kind.RES_write && nextToken.getKind() != IToken.Kind.RES_while)
+            {
+                if(nextToken.getKind() == IToken.Kind.DOT)
+                {
+                    firstToken = nextToken;
+                    nextToken = consume();
+                    continue;
+                }
+                else
+                    declarationList = decList();
+            }
+
+
+            firstToken = nextToken;
+            nextToken = consume();
+            stmList = statementList();
+        }
+        progBlock = new Block(currentToken,declarationList,stmList);
+        return progBlock;
+    }
+
+     public List<Declaration> decList() throws PLCException {
+         List<Declaration> declarationList = new ArrayList<>();
+      declarationList = new ArrayList<>();
+        declarationList.add(declar());
+        return declarationList;
+    }
+    public List<Statement> statementList() throws PLCException
+    {
+        List<Statement> stmList = new ArrayList<>();
+        stmList.add(statement());
+        return stmList;
+    }
+    public Statement statement() throws PLCException {
+        Expr ex = null;
+        if(firstToken.getKind() == IToken.Kind.RES_write)
+        {
+            ex = expr();
+            WriteStatement wrt = new WriteStatement(firstToken, ex);
+            return wrt;
+        }
+        else if(firstToken.getKind() == IToken.Kind.RES_while)
+        {
+            ex = expr();
+            progBlock = block();
+            WhileStatement whilst = new WhileStatement(firstToken,ex,progBlock);
+            return whilst;
+
+        }
+        return st;
+    }
+
+
+
+    public Declaration declar() throws PLCException {
+        Expr ex = null;
+       nameDf = nameDef();
+       IToken currentToken = nextToken;
+       firstToken = nextToken;
+        nextToken = consume();
+        if(nextToken.getKind() == IToken.Kind.ASSIGN)
+        {
+            ex = expr();
+        }
+        decl = new Declaration(currentToken,nameDf,ex);
+        return decl;
     }
     /*
     **Function for expression productions
@@ -67,6 +278,10 @@ public class Parser implements IParser
     public IToken consume() throws SyntaxException, LexicalException {
 
         while(inputParserChars[currentPos] == ' ')
+        {
+            currentPos++;
+        }
+        if(inputParserChars[currentPos] == '\n')
         {
             currentPos++;
         }
@@ -107,7 +322,7 @@ public class Parser implements IParser
                 currentToken = nextToken;
                 if(condFlag != true && parenFlag != true &&currentToken.getKind() != IToken.Kind.EOF)
                 {
-
+                    firstToken = currentToken;
                     nextToken = consume();
                 }
 
@@ -189,11 +404,17 @@ public class Parser implements IParser
                 }
                 return numLit;
             }
+            else if(currentToken.getKind() == IToken.Kind.RES_x ||currentToken.getKind() == IToken.Kind.RES_y || currentToken.getKind() == IToken.Kind.RES_r || currentToken.getKind() == IToken.Kind.RES_a)
+            {
+                Expr preDec =  new PredeclaredVarExpr(currentToken);
+                return preDec;
+            }
             else if(currentToken.getKind() == IToken.Kind.STRING_LIT)
             {
                 stringLit = new StringLitExpr(currentToken);
                 return stringLit;
             }
+
             else if(currentToken.getKind() == IToken.Kind.RES_rand)
             {
                 rnd = new RandomExpr(currentToken);
@@ -250,6 +471,7 @@ public class Parser implements IParser
                     }
 
                 }
+
                 //relational operator
                 else if(nextToken.getKind() == IToken.Kind.GE || nextToken.getKind() == IToken.Kind.GT || nextToken.getKind() == IToken.Kind.LE || nextToken.getKind() == IToken.Kind.LT|| nextToken.getKind() == IToken.Kind.EQ)
                 {
@@ -354,21 +576,15 @@ public class Parser implements IParser
             {
                nextToken = consume();
                 firstToken = nextToken;
-                e =expr();
+                if(nextToken.getKind() == IToken.Kind.BANG || nextToken.getKind() == IToken.Kind.RES_sin ||nextToken.getKind()== IToken.Kind.RES_cos||nextToken.getKind() == IToken.Kind.RES_atan||nextToken.getKind() == IToken.Kind.MINUS )
+                {
+                    e = unaryExpr();
+                }
+                else
+                     e =expr();
             }
-
-
-//            if(nextToken.getKind() == IToken.Kind.RPAREN)
-//            {
-//               nextToken = consume();
-//                if(nextToken.getKind() == IToken.Kind.EOF)
-//                    return e;
-//                //e = expr();
-//
-//            }
-
-
         }
+
         else
             {
                 throw new SyntaxException("Unable to parse given expression");
@@ -387,6 +603,10 @@ public class Parser implements IParser
             IToken  currentToken = firstToken;
             nextToken =  consume();
             kind = nextToken.getKind();
+            while(kind == IToken.Kind.BANG ||  kind == IToken.Kind.RES_sin ||kind == IToken.Kind.RES_cos||kind == IToken.Kind.RES_atan||kind == IToken.Kind.MINUS )
+            {
+                e = unaryExtension(currentToken);
+            }
             e = primaryExpr();
             unary = new UnaryExpr(currentToken,currentToken.getKind(),e);
             return unary;
@@ -395,6 +615,18 @@ public class Parser implements IParser
         else
             e =  primaryExpr();
         return e;
+    }
+
+    private Expr unaryExtension(IToken currentTok) throws PLCException
+    {
+
+        IToken.Kind op = nextToken.getKind();
+
+
+            rightE = expr();
+           unary = new UnaryExpr(currentTok,op,rightE);
+            return unary;
+
     }
 
 
@@ -529,11 +761,11 @@ public class Parser implements IParser
                     lexInput = inputParser.substring(currentPos,inputParser.length());
                     scanner = CompilerComponentFactory.makeScanner(lexInput);
                     firstToken = scanner.next();
-                    e = expr();
+                   // e = expr();
+                    prog = program();
 
-               //currentPos = Scanner.pos;
-
-           return e;
+          return prog;
+          // return e;
        }
 
     }
