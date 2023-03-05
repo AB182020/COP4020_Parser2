@@ -202,13 +202,13 @@ public class Parser implements IParser {
                     declarationList.add(declar());
             }
 
-
-            firstToken = nextToken;
-            nextToken = consume();
-            if(declarationList.size() == 0)
+            else
             {
+                firstToken = nextToken;
+                nextToken = consume();
                 stmList = statementList();
             }
+
 
         }
         progBlock = new Block(currentToken,declarationList,stmList);
