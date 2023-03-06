@@ -10,7 +10,16 @@ public class Parser implements IParser {
 
     AST astObj;
     String lexInput;
+    List<Statement> stmList = new ArrayList<>();
+    List<Declaration> declarationList = new ArrayList<>();
+
+    LValue lVal;
+    ColorChannel chan_Select;
+    PixelSelector pix;
+    boolean decFlag = false;
     IToken.Kind preOp = null;
+
+    Type LvalType;
     String inputParser;
     final char[] inputParserChars;
     IToken.Kind kind;
@@ -135,7 +144,7 @@ public class Parser implements IParser {
    public NameDef nameDef() throws PLCException {
         Dimension dim = null;
 
-        if(nextToken.getKind() != IToken.Kind.RES_void && nextToken.getKind() != IToken.Kind.RES_image && nextToken.getKind() != IToken.Kind.RES_int && nextToken.getKind() != IToken.Kind.RES_pixel && nextToken.getKind() != IToken.Kind.RES_string )
+        if(nextToken.getKind() != IToken.Kind.RES_void && nextToken.getKind() != IToken.Kind.RES_image && nextToken.getKind() != IToken.Kind.RES_int && nextToken.getKind() != IToken.Kind.RES_pixel && nextToken.getKind() != IToken.Kind.RES_string && firstToken.getKind() != IToken.Kind.RES_while && firstToken.getKind() != IToken.Kind.RES_string )
         {
             throw  new SyntaxException("Invalid Syntax wrong type");
         }
@@ -183,10 +192,15 @@ public class Parser implements IParser {
 //block statement
      public Block block() throws PLCException {
         IToken currentToken = nextToken;
-        firstToken = nextToken;
-        nextToken = consume();
-         List<Declaration> declarationList = new ArrayList<>();
+        List<Declaration> declarationList = new ArrayList<>();
          List<Statement> stmList = new ArrayList<>();
+        if(nextToken.getKind() != IToken.Kind.RES_while)
+        {
+            firstToken = nextToken;
+            nextToken = consume();
+        }
+
+
 
         while(nextToken.getKind() != IToken.Kind.RCURLY)
         {
@@ -199,14 +213,35 @@ public class Parser implements IParser {
                     continue;
                 }
                 else
-                    declarationList.add(declar());
+                {
+                    if(firstToken.getKind() != IToken.Kind.RES_while)
+                    {
+                        decl = declar();
+                        declarationList.add(decl);
+                    }
+
+
+                }
+
             }
 
             else
             {
-                firstToken = nextToken;
-                nextToken = consume();
-                stmList = statementList();
+                if(nextToken.getKind() != IToken.Kind.ASSIGN)
+                {
+                    firstToken = nextToken;
+                    nextToken = consume();
+                   stmList.add(statement());
+
+                }
+                else
+                {
+                    stmList.add(statement());
+
+                }
+
+
+
             }
 
 
@@ -215,12 +250,12 @@ public class Parser implements IParser {
         return progBlock;
     }
 
-    public List<Statement> statementList() throws PLCException
-    {
-        List<Statement> stmList = new ArrayList<>();
-        stmList.add(statement());
-        return stmList;
-    }
+//    public List<Statement> statementList() throws PLCException
+//    {
+//        List<Statement> stmList = new ArrayList<>();
+//        stmList.add(statement());
+//        return stmList;
+//    }
     public Statement statement() throws PLCException {
         Expr ex = null;
         if(firstToken.getKind() == IToken.Kind.RES_write)
@@ -237,7 +272,25 @@ public class Parser implements IParser {
             return whilst;
 
         }
+
+//        else
+//        {
+//            pix = Pix();
+//            chan_Select = chan_Select();
+//            lVal = new LValue(firstToken,new Ident(firstToken),pix,chan_Select);
+//            firstToken = nextToken;
+//            nextToken = consume();
+//            e = expr();
+//        }
         return st;
+    }
+    public PixelSelector Pix()
+    {
+        return null;
+    }
+    public ColorChannel chan_Select()
+    {
+        return null;
     }
 
 
@@ -248,11 +301,19 @@ public class Parser implements IParser {
        IToken currentToken = nextToken;
        firstToken = nextToken;
         nextToken = consume();
-        if(nextToken.getKind() == IToken.Kind.ASSIGN)
+        if(inputParserChars[currentPos] != '=')
         {
-            ex = expr();
+            decl = new Declaration(currentToken,nameDf,ex);
+            decFlag = true;
         }
-        decl = new Declaration(currentToken,nameDf,ex);
+        else
+        {
+            firstToken = nextToken;
+            nextToken = consume();
+            ex = expr();
+            decl = new Declaration(currentToken,nameDf,ex);
+
+        }
         return decl;
     }
     /*
@@ -275,14 +336,11 @@ public class Parser implements IParser {
     }
     public IToken consume() throws SyntaxException, LexicalException {
 
-        while(inputParserChars[currentPos] == ' ')
+        while(inputParserChars[currentPos] == ' ' || inputParserChars[currentPos] == '\n')
         {
             currentPos++;
         }
-        if(inputParserChars[currentPos] == '\n')
-        {
-            currentPos++;
-        }
+
         if(firstToken.getSourceLocation() != null && firstToken.getKind() != IToken.Kind.EOF)
         {
 
@@ -383,8 +441,13 @@ public class Parser implements IParser {
                     }
 
                 }
+                //DOT
+                else if(nextToken.getKind() == IToken.Kind.DOT)
+                {
+                    return numLit;
+                }
                 //relational
-                else if(nextToken.getKind() == IToken.Kind.GE || nextToken.getKind() == IToken.Kind.GT || nextToken.getKind() == IToken.Kind.LE || nextToken.getKind() == IToken.Kind.LT || nextToken.getKind() == IToken.Kind.EQ)
+                else if(nextToken.getKind() == IToken.Kind.GE || nextToken.getKind() == IToken.Kind.GT || nextToken.getKind() == IToken.Kind.LE || nextToken.getKind() == IToken.Kind.LT || nextToken.getKind() == IToken.Kind.EQ || nextToken.getKind() == IToken.Kind.ASSIGN)
                 {
                     leftBinaryExp = numLit;
                     IToken.Kind op = nextToken.getKind();
@@ -498,7 +561,7 @@ public class Parser implements IParser {
                 {
                     eofKind = nextToken.getKind();
                 }
-                if(eofKind != IToken.Kind.EOF)
+                if(eofKind != IToken.Kind.EOF && eofKind != IToken.Kind.LCURLY)
                     nextToken = consume();
                 if(nextToken.getKind() == IToken.Kind.QUESTION || nextToken.getKind() == IToken.Kind.EOF)
                 {
