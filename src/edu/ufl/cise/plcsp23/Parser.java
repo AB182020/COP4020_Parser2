@@ -221,20 +221,9 @@ public class Parser implements IParser {
 
             else
             {
-                if(nextToken.getKind() != IToken.Kind.ASSIGN)
-                {
                     firstToken = nextToken;
                     nextToken = consume();
                    stmList.add(statement());
-
-                }
-                else
-                {
-                    stmList.add(statement());
-
-                }
-
-
 
             }
 
