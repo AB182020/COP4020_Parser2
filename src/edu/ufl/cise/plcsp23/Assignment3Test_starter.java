@@ -408,7 +408,7 @@ class Assignment3Test_starter {
 		checkNameDef(v16, "s3", Type.PIXEL);
 		assertNull(v16.getDimension());
 		Expr v17 = v15.getInitializer();
-		checkUnary(v17, Kind.RES_sin);
+		checkUnary(v17, Kind.ASSIGN);
 		Expr v18 = ((UnaryExpr) v17).getE();
 		checkNumLit(v18, 90);
 		List<Statement> v19 = v4.getStatementList();

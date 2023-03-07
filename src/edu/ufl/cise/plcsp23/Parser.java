@@ -658,10 +658,11 @@ public class Parser implements IParser {
 
     public Expr unaryExpr() throws PLCException {
 
-        kind = firstToken.getKind();
+        kind = nextToken.getKind();
         if(kind == IToken.Kind.BANG || kind == IToken.Kind.RES_sin ||kind == IToken.Kind.RES_cos||kind == IToken.Kind.RES_atan||kind == IToken.Kind.MINUS )
         {
             IToken  currentToken = firstToken;
+            firstToken = nextToken;
             nextToken =  consume();
             kind = nextToken.getKind();
             while(kind == IToken.Kind.BANG ||  kind == IToken.Kind.RES_sin ||kind == IToken.Kind.RES_cos||kind == IToken.Kind.RES_atan||kind == IToken.Kind.MINUS )
