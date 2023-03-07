@@ -194,14 +194,8 @@ public class Parser implements IParser {
         IToken currentToken = nextToken;
         List<Declaration> declarationList = new ArrayList<>();
          List<Statement> stmList = new ArrayList<>();
-        if(nextToken.getKind() != IToken.Kind.RES_while)
-        {
-            firstToken = nextToken;
-            nextToken = consume();
-        }
-
-
-
+         firstToken = nextToken;
+         nextToken = consume();
         while(nextToken.getKind() != IToken.Kind.RCURLY)
         {
             if(nextToken.getKind() != IToken.Kind.RES_write && nextToken.getKind() != IToken.Kind.RES_while)
@@ -301,7 +295,7 @@ public class Parser implements IParser {
        IToken currentToken = nextToken;
        firstToken = nextToken;
         nextToken = consume();
-        if(inputParserChars[currentPos] != '=')
+        if(nextToken.getKind() != IToken.Kind.ASSIGN)
         {
             decl = new Declaration(currentToken,nameDf,ex);
             decFlag = true;
