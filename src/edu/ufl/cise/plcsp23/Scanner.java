@@ -200,7 +200,7 @@ public class Scanner implements IScanner
                         currentToken = currentToken+this.ch;
 
 
-                    while(this.ch != '"' && this.ch !='\n' &&  this.ch !='\r'&& this.ch !='\f' &&this.ch!='\0')
+                    while(this.ch != '"' && this.ch !='\n' &&  this.ch !='\r'&& this.ch !='\f' &&this.ch!='\0' && this.ch!= ' ')
                     {
 
                         //currentPos =pos;

@@ -9,6 +9,8 @@ import java.util.List;
 public class Parser implements IParser {
 
     AST astObj;
+
+    boolean CheckStringLit = false;
     String lexInput;
     List<Statement> stmList = new ArrayList<>();
     List<Declaration> declarationList = new ArrayList<>();
@@ -165,27 +167,23 @@ public class Parser implements IParser {
 
     public Dimension dimension() throws PLCException {
         Dimension dim = null;
-        IToken currentToken;
-        firstToken = nextToken;
-       nextToken = consume();
-       Expr eLeft = null;
-       Expr eRight=null;
+        IToken currentToken = null;
+
+       Expr e1= null;
+       Expr e2=null;
        if(nextToken.getKind() == IToken.Kind.LSQUARE) {
-           currentToken = nextToken;
+           currentToken = firstToken;
            firstToken = nextToken;
            nextToken = consume();
+           e1 = expr();
            while (nextToken.getKind() != IToken.Kind.RSQUARE)
            {
-               eLeft = expr();
-               firstToken = nextToken;
-               nextToken = consume();
-               if(nextToken.getKind() != IToken.Kind.COMMA)
-                   throw new SyntaxException("Invalid Delimeter in dimension");
-               firstToken = nextToken;
-               nextToken = consume();
-               eRight = expr();
+               e2 = expr();
+//               firstToken = nextToken;
+//               nextToken = consume();
+
            }
-           dim =new Dimension(currentToken,eLeft,eRight);
+           dim =new Dimension(currentToken,e1,e2);
        }
         return dim;
     }
@@ -319,12 +317,12 @@ public class Parser implements IParser {
     }
     public IToken consume() throws SyntaxException, LexicalException {
 
-        while(inputParserChars[currentPos] == ' ' || inputParserChars[currentPos] == '\n')
+        while(inputParserChars[currentPos] == ' ' || inputParserChars[currentPos] == '\n' || inputParserChars[currentPos] == '\t')
         {
             currentPos++;
         }
 
-        if(firstToken.getSourceLocation() != null && firstToken.getKind() != IToken.Kind.EOF)
+        if(firstToken.getSourceLocation() != null && firstToken.getKind() != IToken.Kind.EOF && CheckStringLit != true)
         {
 
           //  currentPos =  currentPos+firstToken.getSourceLocation().column();
@@ -359,7 +357,7 @@ public class Parser implements IParser {
             else
             {
                 currentToken = nextToken;
-                if(condFlag != true && parenFlag != true &&currentToken.getKind() != IToken.Kind.EOF)
+                if(condFlag != true && parenFlag != true &&currentToken.getKind() != IToken.Kind.EOF && currentToken.getKind() != IToken.Kind.STRING_LIT)
                 {
                     firstToken = currentToken;
                     nextToken = consume();
@@ -456,7 +454,38 @@ public class Parser implements IParser {
             else if(currentToken.getKind() == IToken.Kind.STRING_LIT)
             {
                 stringLit = new StringLitExpr(currentToken);
-                return stringLit;
+                currentPos++;
+              if(inputParserChars[currentPos] == '"')
+                {
+                    currentPos++;
+                    while (inputParserChars[currentPos] != '"')
+                    {
+                        currentPos++;
+                    }
+                }
+
+                CheckStringLit = true;
+                nextToken = consume();
+                if(nextToken.getKind() == IToken.Kind.PLUS || nextToken.getKind() == IToken.Kind.MINUS|| nextToken.getKind() == IToken.Kind.DIV|| nextToken.getKind() == IToken.Kind.TIMES|| nextToken.getKind() == IToken.Kind.MOD|| nextToken.getKind() == IToken.Kind.EXP)
+                {
+                    leftBinaryExp = stringLit;
+                    IToken.Kind op = nextToken.getKind();
+
+                    nextToken = consume();
+                    if(nextToken.getKind() == IToken.Kind.PLUS || nextToken.getKind() == IToken.Kind.MINUS|| nextToken.getKind() == IToken.Kind.DIV|| nextToken.getKind() == IToken.Kind.TIMES|| nextToken.getKind() == IToken.Kind.MOD)
+                        throw new SyntaxException("Invalid Op");
+                    else
+                    {
+                        rightE = expr();
+                        binary = new BinaryExpr(currentToken,leftBinaryExp,op,rightE);
+                        return binary;
+                    }
+                }
+                else
+                {
+                    return stringLit;
+                }
+
             }
 
             else if(currentToken.getKind() == IToken.Kind.RES_rand)
