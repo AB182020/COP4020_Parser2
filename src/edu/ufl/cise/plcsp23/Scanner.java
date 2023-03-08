@@ -39,6 +39,9 @@ public class Scanner implements IScanner
         maps.put("load","load".toCharArray());
         maps.put("void","void".toCharArray());
         maps.put("display","display".toCharArray());
+        maps.put("red","red".toCharArray());
+        maps.put("grn","grn".toCharArray());
+        maps.put("blu","blu".toCharArray());
         maps.put("x","x".toCharArray());
         maps.put("y","y".toCharArray());
         maps.put("a","a".toCharArray());
@@ -200,7 +203,7 @@ public class Scanner implements IScanner
                         currentToken = currentToken+this.ch;
 
 
-                    while(this.ch != '"' && this.ch !='\n' &&  this.ch !='\r'&& this.ch !='\f' &&this.ch!='\0' && this.ch!= ' ')
+                    while(this.ch != '"' && this.ch !='\n' &&  this.ch !='\r'&& this.ch !='\f' &&this.ch!='\0' && this.ch!= ' '&& this.ch!= '.')
                     {
 
                         //currentPos =pos;
@@ -220,6 +223,7 @@ public class Scanner implements IScanner
                             {
                                 //currentToken = currentToken+this.ch;
                                 pos++;
+
                                 this.ch = inputChars[pos];
                                 if(this.ch == '"')
                                 {
@@ -537,6 +541,8 @@ public class Scanner implements IScanner
                 return IToken.Kind.EQ;
             case ",":
                 return IToken.Kind.COMMA;
+            case ":":
+                return IToken.Kind.COLON;
             case ".":
                 return IToken.Kind.DOT;
             case "=":
@@ -669,6 +675,12 @@ public class Scanner implements IScanner
                 return IToken.Kind.RES_pixel;
             case "string":
                 return IToken.Kind.RES_string;
+            case "red":
+                return IToken.Kind.RES_red;
+            case "blu":
+                return IToken.Kind.RES_blu;
+            case "grn":
+                return IToken.Kind.RES_grn;
             default:
                 return null;
 
